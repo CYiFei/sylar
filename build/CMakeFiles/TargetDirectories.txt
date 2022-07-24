@@ -1,0 +1,5 @@
+/home/chengyifei/workspace/sylar/build/CMakeFiles/rebuild_cache.dir
+/home/chengyifei/workspace/sylar/build/CMakeFiles/test_config.dir
+/home/chengyifei/workspace/sylar/build/CMakeFiles/edit_cache.dir
+/home/chengyifei/workspace/sylar/build/CMakeFiles/test.dir
+/home/chengyifei/workspace/sylar/build/CMakeFiles/sylar.dir

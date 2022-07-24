@@ -9,6 +9,7 @@ include_directories(sylar/include)
 link_directories(sylar/lib)
 
 find_library(YAMLCPP yaml-cpp)
+
 message("***", ${YAMLCPP})
 
 set(LIB_SRC
