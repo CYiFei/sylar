@@ -7,6 +7,7 @@
 #include <pthread.h>
 #include <semaphore.h>
 #include <stdint.h>
+#include <string>
 
 //pthread_xxx
 //std::thread, pthread
