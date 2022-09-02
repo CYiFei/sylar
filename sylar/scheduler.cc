@@ -63,11 +63,11 @@ void Scheduler::start() {
     }
     lock.unlock();
 
-    if(m_rootFiber) {
-        //m_rootFiber->swapIn();
-        m_rootFiber->call();
-        SYLAR_LOG_INFO(g_logger) << "call out " << m_rootFiber->getState();
-    }
+    //if(m_rootFiber) {
+    //    //m_rootFiber->swapIn();
+    //    m_rootFiber->call();
+    //    SYLAR_LOG_INFO(g_logger) << "call out " << m_rootFiber->getState();
+    //}
 }
 
 void Scheduler::stop() {
@@ -84,6 +84,7 @@ void Scheduler::stop() {
         }
     }
 
+    //bool exit_on_this_fiber = false;
     if(m_rootThread != -1) {
         SYLAR_ASSERT(GetThis() == this);
     } else {
@@ -99,10 +100,21 @@ void Scheduler::stop() {
         tickle();
     }
 
-    if(stopping()) {
-        return;
+    if(m_rootFiber) {
+        if(!stopping()) {
+            m_rootFiber->call();
+        }
     }
 
+    std::vector<Thread::ptr> thrs;
+    {
+        MutexType::Lock lock(m_mutex);
+        thrs.swap(m_threads);
+    }
+
+    for(auto& i : thrs) {
+        i->join();
+    }
 }
 
 void Scheduler::setThis() {
@@ -123,6 +135,7 @@ void Scheduler::run() {
     while(true) {
         ft.reset();
         bool tickle_me = false;
+        bool is_active = false;
         {
             MutexType::Lock lock(m_mutex);
             auto it = m_fibers.begin();
@@ -141,6 +154,8 @@ void Scheduler::run() {
 
                 ft = *it;
                 m_fibers.erase(it);
+                ++m_activeThreadCount;
+                is_active = true;
                 break;
             }
         }
@@ -151,7 +166,6 @@ void Scheduler::run() {
 
         if(ft.fiber && (ft.fiber->getState() != Fiber::TERM
                         && ft.fiber->getState() != Fiber::EXCEPT)) {
-            ++m_activeThreadCount;
             ft.fiber->swapIn();
             --m_activeThreadCount;
 
@@ -169,7 +183,6 @@ void Scheduler::run() {
                 cb_fiber.reset(new Fiber(ft.cb));
             }
             ft.reset();
-            ++m_activeThreadCount;
             cb_fiber->swapIn();
             --m_activeThreadCount;
             if(cb_fiber->getState() == Fiber::READY) {
@@ -183,6 +196,10 @@ void Scheduler::run() {
                 cb_fiber.reset();
             }
         } else {
+            if(is_active) {
+                --m_activeThreadCount;
+                continue;
+            }
             if(idle_fiber->getState() == Fiber::TERM) {
                 SYLAR_LOG_INFO(g_logger) << "idle fiber term";
                 break;
@@ -211,6 +228,9 @@ bool Scheduler::stopping() {
 
 void Scheduler::idle() {
     SYLAR_LOG_INFO(g_logger) << "idle";
+    while(!stopping()) {
+        sylar::Fiber::YieldToHold();
+    }
 }
 
 }
